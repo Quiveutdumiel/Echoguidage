@@ -127,7 +127,7 @@ class echographie:
             comp = abs(np.array(mp0deg)-self.x)
             indice = np.argmin(comp)
             if np.max(mp0deg)>self.x>np.min(mp0deg):
-                image = QtGui.QImage(dossier+'/0deg/'+str(10*mp0deg[indice])+" 0 0.jpg")
+                image = QtGui.QImage(dossier+'/0deg/'+str(mp0deg[indice])+" 0 0.jpg")
                 #print("distance sonde image"+str(10*mp0deg[indice]))
             else:
                 image = QtGui.QImage("hors_zone.jpg")
