@@ -42,7 +42,7 @@ class echographie:
         self.__angle_x = angle_x
         self.__angle_y = angle_y
         self.__angle_z = angle_z
-        self.longueur = 0.0125 #distance entre la base de la sonde et la balle en metre
+        self.longueur = 0.125 #distance entre la base de la sonde et la balle en metre
         
     @property
     def x(self):
@@ -156,7 +156,7 @@ class aiguille:
         self.__inclinaison = inclinaison
         self.__prof = prof
         self.__inj = inj
-        self.longueur = 0.0190 #distance entre la pointe de l'aiguille et la balle en metre
+        self.longueur = 0.19 #distance entre la pointe de l'aiguille et la balle en metre
         self.hauteur_capteur = 90
         
     @property
@@ -307,7 +307,7 @@ class aiguille:
         phi = self.orientation(sonde)
         
         theta_aiguille = radians(self.inclinaison)
-        profondeur = self.prof*10**(-3) #donnee en millimetres
+        profondeur = self.prof*10**(-3) #profondeur donnee en millimetres par la carte
         
         xe = profondeur * cos(theta_aiguille) * sin(phi) + ponct[0]
         ye = -profondeur * cos(theta_aiguille) * cos(phi) + ponct[1]
@@ -333,7 +333,7 @@ class aiguille:
    
     
     
-    def intervalle_plan(self, sonde, z, epsilon = 0.1):
+    def intervalle_plan(self, sonde, z, epsilon = 0.01):
         
         """ Retourne les y pour lesquels l'aiguille est dans le plan de la sonde """
     
