@@ -25,7 +25,7 @@ if __name__ == '__main__':
 #     BGR pour les couleurs Lower et Upper en HSV
     
     colorLower_sonde = (16, 101, 129)
-    colorUpper_sonde = (26, 255, 255)
+    colorUpper_sonde = (27, 255, 255)
     
     colorLower_aiguille = (81, 40, 110)
     colorUpper_aiguille = (107, 255, 255) #bleu
@@ -91,6 +91,7 @@ if __name__ == '__main__':
             ((x, y), radius) = cv2.minEnclosingCircle(cnt)
             center = (int(x),int(y))
             radius = int(radius)
+            print("Rayon du cercle en pixels: ", radius)
             cv2.circle(frame,center,radius,(0,255,0),2)
             #print(cv2.minEnclosingCircle(cnt))
             

@@ -11,10 +11,10 @@ import cv2
 # BGR pour les couleurs Lower et Upper en HSV
 global colorLower_sonde, colorUpper_sonde, colorLower_aiguille, colorUpper_aiguille
 
-colorLower_sonde = (16, 93, 178)
-colorUpper_sonde = (26, 200, 255)
+colorLower_sonde = (16, 80, 129)
+colorUpper_sonde = (30, 255, 255)
 
-colorLower_aiguille = (91, 60, 200)
+colorLower_aiguille = (81, 70, 110)
 colorUpper_aiguille = (107, 255, 255) #bleu
 
 # Parametres pour la callibration en metre

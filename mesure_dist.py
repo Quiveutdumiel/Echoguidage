@@ -14,7 +14,7 @@ import time
 global colorLower_sonde, colorUpper_sonde, colorLower_aiguille, colorUpper_aiguille
 
 colorLower_sonde = (16, 101, 129)
-colorUpper_sonde = (26, 255, 255)
+colorUpper_sonde = (27, 255, 255)
 
 colorLower_aiguille = (81, 40, 110)
 colorUpper_aiguille = (107, 255, 255) #bleu
@@ -64,7 +64,7 @@ def R_3D(frame, n_cam):
     dist_s = None
     ys = None
     ya = None
-    F=795
+    F = 795
     Fy = 795
     
     if len(contours_sonde) > 0:
@@ -126,9 +126,9 @@ if __name__ == '__main__':
             dist_sonde0_2D = R_2D(z_balle_sonde, dist_sonde0)
             dist_aiguille0_2D = R_2D(z_balle_aiguille, dist_aiguille0)
             
-            print("distance camera n_{} - ".format(0) + "sonde" + "= {} m\n".format(dist_sonde0_2D))
-            print("distance camera n_{} - ".format(0) + "aiguille" + "= {} m\n".format(dist_aiguille0_2D))
-            print("ys, ya =", [ys,ya])
+            #print("distance camera n_{} - ".format(0) + "sonde" + "= {} m\n".format(dist_sonde0_2D))
+            #print("distance camera n_{} - ".format(0) + "aiguille" + "= {} m\n".format(dist_aiguille0_2D))
+            #print("ys, ya =", [ys,ya])
             time.sleep(0.1)
 
             # Affichage des images
