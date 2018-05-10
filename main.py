@@ -42,6 +42,7 @@ class echographie:
         self.__angle_y = angle_y
         self.__angle_z = angle_z
         self.longueur = 0.125 #distance entre la base de la sonde et la balle en metre
+        self.largeur = 0.07 #largeur de la sonde
         
     @property
     def x(self):
@@ -327,39 +328,40 @@ class aiguille:
         
         theta_aiguille = radians(self.inclinaison)
         
-        x = -h * cos(theta_aiguille) * sin(phi) + ponct[0]
-        y = -h * cos(theta_aiguille) * cos(phi) + ponct[1]
+        x = ponct[0] - h * cos(theta_aiguille) * sin(phi)
+        y = ponct[1] - h * cos(theta_aiguille) * cos(phi)
         z = -h * sin(theta_aiguille)
         
         return x, y, z
    
     
     
-    def intervalle_plan(self, sonde, z, largeur_sonde = 0.07):
+    def intervalle_plan(self, sonde, z, epsilon = 0.02):
         
-        """ Retourne les x pour lesquels l'aiguille est dans le plan de la sonde """
+        """ Retourne les x pour lesquels l'aiguille est dans le plan de la sonde 
+        epsilon: marge d'erreur due aux fluctuations des capteurs """
     
         theta_sonde = radians(sonde.angle_z)
-    
-        ys = sonde.y + sonde.longueur*cos(theta_sonde)
         
         #Si la sonde n est pas inclinee on simplifie le probleme (ce qui evite au passage une division par 0)
-        if abs(theta_sonde) <= 5:
-            y1 = ys - largeur_sonde
+        if theta_sonde > 87 and theta_sonde < 93:
+            x_N = sonde.x - (sonde.longueur * sin(theta_sonde) + z*sin(self.inclinaison))/tan(theta_sonde)
 
         #Sinon 
+        elif theta_sonde < 87:
+            x_N = sonde.x - (sonde.longueur * sin(theta_sonde) + z*sin(self.inclinaison))/tan(theta_sonde)
+          
         else:
-            y1 = ys - largeur_sonde + np.sign(theta_sonde)*(z/tan(theta_sonde))
+            x_N = - (sonde.x - (sonde.longueur * sin(theta_sonde) + z*sin(self.inclinaison))/tan(theta_sonde))
+            
+        return x_N - epsilon/2, x_N + epsilon/2
     
-        return x1, x1 + 2*largeur_sonde
     
     
-    
-    def dernier_pt_visible(self, sonde, marge = 0.05, dh = 0.05):
+    def dernier_pt_visible(self, sonde, epsilon = 0.02, dh = 0.05):
         """ Retourne les coordonnees du dernier point de l'aiguille situe dans le plan de la sonde (point visible) """
         #marge: pour la fluctuation des capteurs
         #dh: pas de parcourt des points de l'aiguille
-        dh = 0.05
         h = 0
         ya = self.y
         za = 0
@@ -368,10 +370,10 @@ class aiguille:
         while verif == True and h < self.prof:
     
             xa, ya, za = self.pt_aig(sonde, h) #point de l'aiguille courant
-            y1,y2 = self.intervalle_plan(sonde, za, epsilon = 0.1)
+            x1, x2 = self.intervalle_plan(sonde, za, epsilon)
     
             #si le point courant est dans le plan, on continue de parcourir les points jusqu'à qu'un point ne soit plus valide
-            if (ya <= y2 and ya >= y1) and (xa >= sonde.x - marge and xa <= sonde.x + marge):
+            if (xa <= x2 and xa >= x1) and (ya >= -sonde.largeur/2 and ya <= sonde.largeur/2):
                 h += dh
     
             else:
