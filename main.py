@@ -358,23 +358,22 @@ class aiguille:
     
     
     
-    def dernier_pt_visible(self, sonde, epsilon = 0.02, dh = 0.05):
+    def dernier_pt_visible(self, sonde, epsilon = 0.02, dh = 0.005):
         """ Retourne les coordonnees du dernier point de l'aiguille situe dans le plan de la sonde (point visible) """
         #marge: pour la fluctuation des capteurs
         #dh: pas de parcourt des points de l'aiguille
         h = 0
         ya = self.y
-        za = 0
         verif = True
         
         while verif == True and h < self.prof:
     
             xa, ya, za = self.pt_aig(sonde, h) #point de l'aiguille courant
-            x1, x2 = self.intervalle_plan(sonde, za, epsilon)
+            x1, x2 = self.intervalle_plan(sonde, h, epsilon)
     
             #si le point courant est dans le plan, on continue de parcourir les points jusqu'à qu'un point ne soit plus valide
             if (xa <= x2 and xa >= x1) and (ya >= -sonde.largeur/2 and ya <= sonde.largeur/2):
-                h += dh
+                h = dh
     
             else:
                 verif = False
