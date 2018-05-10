@@ -21,7 +21,6 @@ from math import atan2, cos, sin, tan, pi, radians
 from detection_balles import *
 ###############################
 
-
 global pos
 pos = []
 
@@ -111,7 +110,7 @@ class echographie:
         if self.x == None:
             return None
         else:
-            return self.x - hs * cos(radians(self.angle_z))
+            return self.x  - hs * cos(radians(self.angle_z))
 
         
     def dessinimage(self, qp):
@@ -124,11 +123,11 @@ class echographie:
         if self.x == None:
             image = QtGui.QImage("erreur_detection.jpg")
         else:    
-            comp = abs(np.array(mp0deg)-self.x)
+            comp = abs(np.array(mp0deg)-self.x*100)
             indice = np.argmin(comp)
             if np.max(mp0deg)>self.x>np.min(mp0deg):
                 image = QtGui.QImage(dossier+'/0deg/'+str(mp0deg[indice])+" 0 0.jpg")
-                #print("distance sonde image"+str(10*mp0deg[indice]))
+                print("Image correspondante "+str(mp0deg[indice]))
             else:
                 image = QtGui.QImage("hors_zone.jpg")
 
@@ -157,7 +156,7 @@ class aiguille:
         self.__prof = prof
         self.__inj = inj
         self.longueur = 0.19 #distance entre la pointe de l'aiguille et la balle en metre
-        self.hauteur_capteur = 90
+        self.hauteur_capteur = 90 #distance pointe-capteur infrarouge en mm
         
     @property
     def x(self):
@@ -272,7 +271,7 @@ class aiguille:
         xa = self.x
         ya = self.y
         
-        if ya == ys:
+        if ya == ys or xs == None or xa == None or ys == None or ya == None:
             return 0
         else:
             return atan2(xa-xs, ya-ys)
@@ -288,6 +287,9 @@ class aiguille:
         ya = self.y
 
         phi = self.orientation(sonde)
+        ####################
+        print("Orientation", phi)
+        ####################
         theta_aiguille = radians(self.inclinaison)
         
         xp = xa - self.longueur*cos(theta_aiguille)*sin(phi)
@@ -309,8 +311,8 @@ class aiguille:
         theta_aiguille = radians(self.inclinaison)
         profondeur = self.prof*10**(-3) #profondeur donnee en millimetres par la carte
         
-        xe = profondeur * cos(theta_aiguille) * sin(phi) + ponct[0]
-        ye = -profondeur * cos(theta_aiguille) * cos(phi) + ponct[1]
+        xe = ponct[0] - profondeur * cos(theta_aiguille) * sin(phi) 
+        ye = ponct[1] - profondeur * cos(theta_aiguille) * cos(phi) 
         ze = -profondeur * sin(theta_aiguille)
         
         return [xe, ye, ze]  #ye ze utiles pour l IHM
@@ -325,7 +327,7 @@ class aiguille:
         
         theta_aiguille = radians(self.inclinaison)
         
-        x = h * cos(theta_aiguille) * sin(phi) + ponct[0]
+        x = -h * cos(theta_aiguille) * sin(phi) + ponct[0]
         y = -h * cos(theta_aiguille) * cos(phi) + ponct[1]
         z = -h * sin(theta_aiguille)
         
@@ -333,9 +335,9 @@ class aiguille:
    
     
     
-    def intervalle_plan(self, sonde, z, epsilon = 0.01):
+    def intervalle_plan(self, sonde, z, largeur_sonde = 0.07):
         
-        """ Retourne les y pour lesquels l'aiguille est dans le plan de la sonde """
+        """ Retourne les x pour lesquels l'aiguille est dans le plan de la sonde """
     
         theta_sonde = radians(sonde.angle_z)
     
@@ -343,13 +345,13 @@ class aiguille:
         
         #Si la sonde n est pas inclinee on simplifie le probleme (ce qui evite au passage une division par 0)
         if abs(theta_sonde) <= 5:
-            y1 = ys - epsilon
+            y1 = ys - largeur_sonde
 
         #Sinon 
         else:
-            y1 = ys - epsilon + np.sign(theta_sonde)*(z/tan(theta_sonde))
+            y1 = ys - largeur_sonde + np.sign(theta_sonde)*(z/tan(theta_sonde))
     
-        return y1, y1 + 2*epsilon
+        return x1, x1 + 2*largeur_sonde
     
     
     
@@ -466,7 +468,7 @@ class aiguille:
             
             xe = conv_x*extremite[1] + 205
             ye = -conv_y*extremite[2]
-            print(xe, ye)
+            #print(xe, ye)
             
             pos.append([xe,ye])
             #print(pos)
@@ -506,7 +508,7 @@ class MonAppli_menu(QtGui.QMainWindow):
         self.ui.simuler.setEnabled(True)
         
     
-    def quitter(self):  #probleme appli fonctionne encore si quitter
+    def quitter(self):
         self.close()
         
     def lancer_simu(self):
@@ -568,11 +570,11 @@ class MonAppli_jeu(QtGui.QMainWindow):
         ret, frame = self.cam.read()
         
         ######################### Visu camera
-        #mask_sonde0, mask_aiguille0 = traitement(frame)
-        #contours_sonde0, contours_aiguille0 = detect_contours(frame, mask_sonde0, mask_aiguille0)
-        #dist_sonde0 = dist_cam_object(frame, contours_sonde0, 0, "sonde")
-        #dist_aig = dist_cam_object(frame, contours_aiguille0, 0, "aiguille")
-        #cv2.imshow('frame', frame)
+        mask_sonde0, mask_aiguille0 = traitement(frame)
+        contours_sonde0, contours_aiguille0 = detect_contours(frame, mask_sonde0, mask_aiguille0)
+        dist_sonde0 = dist_cam_object(frame, contours_sonde0, 0, "sonde")
+        dist_aig = dist_cam_object(frame, contours_aiguille0, 0, "aiguille")
+        cv2.imshow('frame', frame)
         ###########################
 
 
@@ -582,11 +584,12 @@ class MonAppli_jeu(QtGui.QMainWindow):
         
         if self.ui.pause.text() == "Pause":
             try:
+                #tri les donnees envoyees par la carte arduino
                 donnees = ser.readline().decode('utf-8').strip()
                 donnees = donnees[:-1]
                 donnees = donnees.split(';')
             except(UnicodeDecodeError):
-                print("error valeurs")
+                print("error value")
                 donnees = [0]
 
             erreur_type = False #
@@ -599,30 +602,29 @@ class MonAppli_jeu(QtGui.QMainWindow):
             else:
                 donnees = [float(x) for x in donnees]#profondeur (en mm) / 0 ou 1 bouton / angle x sonde/
                 #angle y sonde / angle z sonde / angle x aiguille / angle y aiguille / angle z aiguille /
+                              
                 self.echogra.x = dist_sonde
-                self.echogra.x = self.echogra.correction_xsonde()                
+                self.echogra.x = self.echogra.correction_xsonde()
+                if self.echogra.x != None: 
+                    self.echogra.x = (self.echogra.x - 0.60) /4 #position origine en metre    
+                
                 self.echogra.angle_x = donnees[3]+75
                 self.echogra.angle_y = donnees[4]+75
                 self.echogra.angle_z = donnees[5]+75
-                self.aigu.x = dist_sonde
-                #print("echo.x"+str(self.echogra.x))
+                
+                self.aigu.x = self.echogra.x
                 self.aigu.y = ya
+                
                 self.aigu.angle_x = donnees[0]-45
                 self.aigu.angle_y = donnees[1]-45
                 self.aigu.angle_z = donnees[2]-45
                 self.aigu.inclinaison = atan2(self.aigu.angle_y, self.aigu.angle_z)*57.3 - 10
                 self.aigu.prof = self.aigu.hauteur_capteur - donnees[6] #en mm
                 #self.aigu.prof = 20
-                self.aigu.inj = donnees[7]  #faire + 1 quand bouton vaut 1
-                #print(self.aigu.inj)
+                
+                self.aigu.inj = donnees[7]
                 
                 self.ui.centralwidget.update()
-                #print('distance aiguille ' +str(self.aigu.x)+'\n')
-                #print('distance sonde ' +str(self.echogra.x)+'\n')
-                #print('inclinaison sonde ' +str(self.echogra.angle_z)+'\n')
-                #print('inclinaison aiguille ' +str(self.aigu.inclinaison)+'\n')
-                #print('profondeur aiguille ' + str(self.aigu.prof)+'\n')
-                #print('########')
         else:
             pass
         
@@ -703,8 +705,8 @@ if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)
     #change ACM number as found from ls /dev/tty*
     #ser=serial.Serial("/dev/ttyACM0",9600) #linux
-    #ser=serial.Serial("\\\\.\\COM5",9600) #windows
-    ser=serial.Serial("\\\\.\\COM6",9600) #sur pc portable
+    ser=serial.Serial("\\\\.\\COM4",9600) #windows
+    #ser=serial.Serial("\\\\.\\COM6",9600) #sur pc portable
     ser.baudrate=9600
     window = MonAppli_menu()
     window.show()
