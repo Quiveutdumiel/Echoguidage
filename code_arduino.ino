@@ -143,12 +143,26 @@ void loop(){
  z = RAD_TO_DEG * (atan2(-yAng1, -xAng1) + PI);
 
  //calibration
- xAng = xAng + calibX;
- yAng = yAng + calibY;
- zAng = zAng + calibZ;
- xAng1 = xAng1 + calibX1;
- yAng1 = yAng1 + calibY1;
- zAng1 = zAng1 + calibZ1;  
+ int x[20],y[20],z[20],m[20],n[20],o[20],a,b,c,d,e,f;
+  for (int i=0; i <= 14; i++) {
+    x[i]=xAng;
+    y[i]=yAng;
+    z[i]=zAng;
+    m[i]=xAng1;
+    n[i]=yAng1;
+    o[i]=zAng1;
+    a=a+x[i];
+    b=b+y[i];
+    c=c+z[i];
+    d=d+m[i];
+    e=e+n[i];
+    f=f+o[i];}
+ xAng = a/20 + calibX;
+ yAng = b/20 + calibY;
+ zAng = c/20 + calibZ;
+ xAng1 = d/20 + calibX1;
+ yAng1 = e/20 + calibY1;
+ zAng1 = f/20 + calibZ1;  
 
  // ACCELEROMETRE 1
  resultat=xAng;
@@ -167,11 +181,11 @@ void loop(){
  resultat=resultat+";";
  
  //DISTANCE
-  int K[5],y;
-  for (int i=0; i <= 4; i++) {
+  int K[10],p;
+  for (int i=0; i <= 9; i++) {
     K[i]=sensor.readRangeSingleMillimeters();
-    y=y+K[i]; }//Serial.println(y/5);
-  resultat=resultat+y/5+";";
+    p=p+K[i]; }//Serial.println(y/5);
+  resultat=resultat+p/10+";";
   if (sensor.timeoutOccurred()) {
     Serial.print(" TIMEOUT"); }
     
