@@ -8,6 +8,16 @@ Created on Thu Feb 22 14:32:27 2018
 
 import cv2
 
+global colorLower_sonde, colorUpper_sonde, colorLower_aiguille, colorUpper_aiguille
+
+############################################
+#HSV de la sonde et de l aiguille
+colorLower_sonde = (16, 101, 129)
+colorUpper_sonde = (27, 255, 255) #jaune
+    
+colorLower_aiguille = (81, 40, 110)
+colorUpper_aiguille = (107, 255, 255) #bleu
+############################################
 
 def nothing(x):
     pass
@@ -19,32 +29,23 @@ if __name__ == '__main__':
     
     known_distance = 0.3
     known_width = 0.04
-        
     
-# =============================================================================
-#     BGR pour les couleurs Lower et Upper en HSV
+###########################################
+    #Selectionner la couleur a calibrer:
     
-    colorLower_sonde = (16, 101, 129)
-    colorUpper_sonde = (27, 255, 255)
-    
-    colorLower_aiguille = (81, 40, 110)
-    colorUpper_aiguille = (107, 255, 255) #bleu
-    
-    colorLower = colorLower_aiguille
-    colorUpper = colorUpper_aiguille
+    #colorLower = colorLower_aiguille
+    #colorUpper = colorUpper_aiguille
 
-    #colorLower = colorLower_sonde
-    #colorUpper = colorUpper_sonde
-
+    colorLower = colorLower_sonde
+    colorUpper = colorUpper_sonde
+###########################################
+    
     Hl = 0
     Sl = 0
     Vl = 0
     Hu = 0
     Su = 0
     Vu = 0
-    
-
-# =============================================================================
     
     
 # =============================================================================

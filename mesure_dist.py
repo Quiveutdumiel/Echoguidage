@@ -10,14 +10,7 @@ import cv2
 from numpy import arcsin, cos, radians
 import time
 
-# BGR pour les couleurs Lower et Upper en HSV
-global colorLower_sonde, colorUpper_sonde, colorLower_aiguille, colorUpper_aiguille
-
-colorLower_sonde = (16, 101, 129)
-colorUpper_sonde = (27, 255, 255)
-
-colorLower_aiguille = (81, 40, 110)
-colorUpper_aiguille = (107, 255, 255) #bleu
+from calibration_couleur import colorLower_sonde, colorUpper_sonde, colorLower_aiguille, colorUpper_aiguille
 
 # Parametres pour le calcul de la distance en metre
 global distance_connue, diametre_connu, zpdg, l_sonde, l_aiguille, zcam

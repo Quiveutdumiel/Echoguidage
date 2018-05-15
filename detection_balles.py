@@ -7,17 +7,8 @@ Created on Thu Feb 22 14:32:27 2018
 """
 
 import cv2
+from calibration_couleur import colorLower_sonde, colorUpper_sonde, colorLower_aiguille, colorUpper_aiguille
 
-# BGR pour les couleurs Lower et Upper en HSV
-global colorLower_sonde, colorUpper_sonde, colorLower_aiguille, colorUpper_aiguille
-
-colorLower_sonde = (16, 80, 129)
-colorUpper_sonde = (30, 255, 255)
-
-colorLower_aiguille = (81, 70, 110)
-colorUpper_aiguille = (107, 255, 255) #bleu
-
-# Parametres pour la callibration en metre
 global distance_connue, diametre_connu
 
 diametre_connu = 0.04
