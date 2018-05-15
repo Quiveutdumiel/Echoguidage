@@ -358,15 +358,16 @@ class aiguille:
     
     
     
-    def dernier_pt_visible(self, sonde, epsilon = 0.02, dh = 0.005):
+    def dernier_pt_visible(self, sonde, epsilon = 0.02, dh = 0.0005):
         """ Retourne les coordonnees du dernier point de l'aiguille situe dans le plan de la sonde (point visible) """
         #marge: pour la fluctuation des capteurs
         #dh: pas de parcourt des points de l'aiguille
         h = 0
         ya = self.y
-        verif = True
+        za = 0
+        pt_dans_plan = True
         
-        while verif == True and h < self.prof:
+        while pt_dans_plan == True and h < self.prof:
     
             xa, ya, za = self.pt_aig(sonde, h) #point de l'aiguille courant
             x1, x2 = self.intervalle_plan(sonde, h, epsilon)
@@ -376,41 +377,10 @@ class aiguille:
                 h += dh
     
             else:
-                verif = False
+                pt_dans_plan = False
                 # on sort de la boucle while est on recupere le dernier point de l'aiguille bon à afficher: xa, ya, za 
         
         return ya, za
-
-    
-#    def pt_origine(self, sonde, epsilon = 0.05):
-#        
-#        """ Retourne l ordonnee a l origine sur l IHM, epsilon correspond au meme epsilon que dans la fonction orientation """
-#        
-#        x0 = sonde.x
-#        y0 = sonde.y + epsilon
-#        
-#        pt_ext = self.pt_extremite(sonde)
-#        xe = pt_ext[0]
-#        ye = pt_ext[1]
-#        ze = pt_ext[2]
-#        
-#        theta_aiguille = radians(self.angle_z)
-#        
-#        F = x0**2 + y0**2 - 2*x0*xe + xe**2 - 2*y0*ye + ye**2 + ze**2
-#        
-#        a = cos(theta_aiguille)**2
-#        b = 2 * (self.prof + sin(theta_aiguille)*ze)
-#        c = self.prof**2 - F
-#        
-#        delta = b**2 - 4*a*c
-#        
-#        d = (-b + sqrt(delta)) / (2*a)
-#        #d2 = (-b - sqrt(delta)) / (2*a) #d2 < 0
-#        
-#        #print(degrees(theta_aiguille), delta, d)
-#        
-#        return -d*sin(theta_aiguille)
-        
     
     
     
@@ -422,25 +392,22 @@ class aiguille:
             return
         else:
             conv_x = (730.0-205.0)/0.05 #conversion metres en pixels
-            conv_y = 670.0/0.1 #conversion metres en pixels
+            conv_y = 670.0/0.05 #conversion metres en pixels
             #x image de 205 a 730 pixels 
             #y image de 0 a 670 pixel
             
             xo = 730    
             yo = 0
             
-            #point extremite
-            #xe = conv_x*self.dernier_pt_visible(sonde)[0] + 205
-            #ye = -conv_y*self.dernier_pt_visible(sonde)[1]
+            #point visible dans le plan de la sonde
+            #V = self.dernier_pt_visible(sonde)
+            #xv = conv_x*V[0] + 205
+            #yv = -conv_y*V[1]
 
-            extremite = self.pt_extremite(sonde)
-            
+            #tests sans prendre en compte le plan
+            extremite = self.pt_extremite(sonde)            
             xe = conv_x*extremite[1] + 205
             ye = -conv_y*extremite[2]
-
-            #limites de l image
-            if xe > 730: xe = 730
-            if ye < 0: ye = 0
             
             qp.setPen( QtGui.QPen(QtCore.Qt.gray,3 ) )
             qp.drawLine(xo, yo, xe, ye)
@@ -455,7 +422,7 @@ class aiguille:
             pass
         else:
             conv_x = (730.0-205.0)/0.05 #conversion centimetre en pixels
-            conv_y = 670.0/0.1 #conversion centimetre en pixels
+            conv_y = 670.0/0.05 #conversion centimetre en pixels
 
             extremite = self.pt_extremite(sonde)
             
@@ -466,8 +433,7 @@ class aiguille:
 
         for x in pos:
             qp.setPen( QtGui.QPen(QtCore.Qt.red,10 ) )
-            qp.drawPoint(x[0], x[1]) 
-            #qp.drawPoint(400, 400) 
+            qp.drawPoint(x[0], x[1])
         
         
 class MonAppli_menu(QtGui.QMainWindow):
@@ -583,7 +549,7 @@ class MonAppli_jeu(QtGui.QMainWindow):
                 print("error value")
                 donnees = [0]
 
-            erreur_type = False #
+            erreur_type = False
             for x in donnees:
                 if not (isinstance(x, str)):
                     erreur_type = True
@@ -594,16 +560,19 @@ class MonAppli_jeu(QtGui.QMainWindow):
                 donnees = [float(x) for x in donnees]#profondeur (en mm) / 0 ou 1 bouton / angle x sonde/
                 #angle y sonde / angle z sonde / angle x aiguille / angle y aiguille / angle z aiguille /
                               
-                #self.echogra.x = 0.6
-                self.echogra.x = dist_sonde
-                self.echogra.x = self.echogra.correction_xsonde()
+                self.echogra.x = 0.6
+                #self.echogra.x = dist_sonde
+                #self.echogra.x = self.echogra.correction_xsonde()
                 if self.echogra.x != None:
-                    self.echogra.x = (self.echogra.x - 0.55) / 4 #position origine en metre 
-                                                                #on divise par 2 min car les mesures ont été fait sur 10cm et les images ne vont qu a 5cm
+                    dist_origine = 0.30 #position origine en metre
+                    self.echogra.x = (self.echogra.x - dist_origine) / 30
+                    #on divise pour augmenter le nb d images par cm
                 
                 self.echogra.angle_x = donnees[3]+75
                 self.echogra.angle_y = donnees[4]+75
-                self.echogra.angle_z = donnees[5]+75
+                
+                #self.echogra.angle_z = donnees[5]+75
+                self.echogra.angle_z = 90
                 
                 self.aigu.x = self.echogra.x
                 #self.aigu.y = ya
@@ -613,8 +582,8 @@ class MonAppli_jeu(QtGui.QMainWindow):
                 self.aigu.angle_y = donnees[1]-45
                 self.aigu.angle_z = donnees[2]-45
                 self.aigu.inclinaison = atan2(self.aigu.angle_y, self.aigu.angle_z)*57.3 - 10
-                #self.aigu.prof = self.aigu.hauteur_capteur - donnees[6] #en mm
-                self.aigu.prof = 20
+                self.aigu.prof = self.aigu.hauteur_capteur - donnees[6] #en mm
+                #self.aigu.prof = 20
                 
                 self.aigu.inj = donnees[7]
                 
