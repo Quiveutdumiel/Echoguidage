@@ -128,7 +128,7 @@ class echographie:
             indice = np.argmin(comp)
             if np.max(mp0deg)>self.x>np.min(mp0deg):
                 image = QtGui.QImage(dossier+'/0deg/'+str(mp0deg[indice])+" 0 0.jpg")
-                print("Image correspondante "+str(mp0deg[indice]))
+                #print("Image correspondante "+str(mp0deg[indice]))
             else:
                 image = QtGui.QImage("hors_zone.jpg")
 
@@ -289,7 +289,7 @@ class aiguille:
 
         phi = self.orientation(sonde)
         ####################
-        print("Orientation", phi)
+        #print("Orientation", phi)
         ####################
         theta_aiguille = radians(self.inclinaison)
         
@@ -426,20 +426,9 @@ class aiguille:
             #x image de 205 a 730 pixels 
             #y image de 0 a 670 pixel
             
-            #point d origine
-            #simple pour commencer
-            #if self.y < 0:
-                #xo = 730
-            #else:
-                #xo = 205
-            
             xo = 730    
             yo = 0
             
-            #xo = conv_x*730+ 205 #temporaire
-            #yo = -conv_y*self.pt_origine(sonde)
-            
-
             #point extremite
             #xe = conv_x*self.dernier_pt_visible(sonde)[0] + 205
             #ye = -conv_y*self.dernier_pt_visible(sonde)[1]
@@ -448,7 +437,10 @@ class aiguille:
             
             xe = conv_x*extremite[1] + 205
             ye = -conv_y*extremite[2]
-            #print(xe, ye)
+
+            #limites de l image
+            if xe > 730: xe = 730
+            if ye < 0: ye = 0
             
             qp.setPen( QtGui.QPen(QtCore.Qt.gray,3 ) )
             qp.drawLine(xo, yo, xe, ye)
@@ -462,21 +454,20 @@ class aiguille:
         if self.x == None or self.y == None or sonde.x == None or sonde.y == None or self.inj == 0:
             pass
         else:
-            conv_x = 70#conversion centimetre en pixels
-            conv_y = 134#conversion centimetre en pixels
+            conv_x = (730.0-205.0)/0.05 #conversion centimetre en pixels
+            conv_y = 670.0/0.1 #conversion centimetre en pixels
 
             extremite = self.pt_extremite(sonde)
             
             xe = conv_x*extremite[1] + 205
             ye = -conv_y*extremite[2]
-            #print(xe, ye)
             
-            pos.append([xe,ye])
-            #print(pos)
+            pos.append([xe,ye]) #pour ne pas que le point disparaisse quand on relache le bouton
+
         for x in pos:
             qp.setPen( QtGui.QPen(QtCore.Qt.red,10 ) )
-            #qp.drawPoint(x[0], x[1]) 
-            qp.drawPoint(400, 400) 
+            qp.drawPoint(x[0], x[1]) 
+            #qp.drawPoint(400, 400) 
         
         
 class MonAppli_menu(QtGui.QMainWindow):
@@ -581,7 +572,6 @@ class MonAppli_jeu(QtGui.QMainWindow):
 
         if ret:
             dist_sonde, dist_aiguille, ys, ya = R_3D(frame, 0)
-            #x_aig, y_aig = pt_ponction(self, sonde)
         
         if self.ui.pause.text() == "Pause":
             try:
@@ -604,10 +594,11 @@ class MonAppli_jeu(QtGui.QMainWindow):
                 donnees = [float(x) for x in donnees]#profondeur (en mm) / 0 ou 1 bouton / angle x sonde/
                 #angle y sonde / angle z sonde / angle x aiguille / angle y aiguille / angle z aiguille /
                               
+                #self.echogra.x = 0.6
                 self.echogra.x = dist_sonde
                 self.echogra.x = self.echogra.correction_xsonde()
                 if self.echogra.x != None:
-                    self.echogra.x = (self.echogra.x - 0.60) /4 #position origine en metre 
+                    self.echogra.x = (self.echogra.x - 0.55) / 4 #position origine en metre 
                                                                 #on divise par 2 min car les mesures ont été fait sur 10cm et les images ne vont qu a 5cm
                 
                 self.echogra.angle_x = donnees[3]+75
@@ -615,14 +606,15 @@ class MonAppli_jeu(QtGui.QMainWindow):
                 self.echogra.angle_z = donnees[5]+75
                 
                 self.aigu.x = self.echogra.x
-                self.aigu.y = ya
+                #self.aigu.y = ya
+                self.aigu.y = 0.05
                 
                 self.aigu.angle_x = donnees[0]-45
                 self.aigu.angle_y = donnees[1]-45
                 self.aigu.angle_z = donnees[2]-45
                 self.aigu.inclinaison = atan2(self.aigu.angle_y, self.aigu.angle_z)*57.3 - 10
-                self.aigu.prof = self.aigu.hauteur_capteur - donnees[6] #en mm
-                #self.aigu.prof = 20
+                #self.aigu.prof = self.aigu.hauteur_capteur - donnees[6] #en mm
+                self.aigu.prof = 20
                 
                 self.aigu.inj = donnees[7]
                 
