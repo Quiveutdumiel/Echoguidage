@@ -307,8 +307,8 @@ class aiguille:
         """ Retourne les coordonnees du point d'injection """
         
         ponct = self.pt_ponction(sonde)
-        phi = self.orientation(sonde)
         
+        phi = self.orientation(sonde)
         theta_aiguille = radians(self.inclinaison)
         profondeur = self.prof*10**(-3) #profondeur donnee en millimetres par la carte
         
@@ -324,8 +324,8 @@ class aiguille:
         """ Retourne les coordonnees d'un point de l'aiguille situe a une profondeur h """
         
         ponct = self.pt_ponction(sonde)
-        phi = self.orientation(sonde)
         
+        phi = self.orientation(sonde)
         theta_aiguille = radians(self.inclinaison)
         
         x = ponct[0] - h * cos(theta_aiguille) * sin(phi)
@@ -343,12 +343,12 @@ class aiguille:
     
         theta_sonde = radians(sonde.angle_z)
         
-        #Si la sonde n est pas inclinee on simplifie le probleme (ce qui evite au passage une division par 0)
-        if theta_sonde > 87 and theta_sonde < 93:
-            x_N = sonde.x - (sonde.longueur * sin(theta_sonde) + z*sin(self.inclinaison))/tan(theta_sonde)
+        #Si la sonde n est pas inclinee on simplifie le probleme
+        if (sonde.angle_z > 87 and sonde.angle_z < 93) or (sonde.angle_z == 0):
+            x_N = sonde.x
 
         #Sinon 
-        elif theta_sonde < 87:
+        elif sonde.angle_z < 87:
             x_N = sonde.x - (sonde.longueur * sin(theta_sonde) + z*sin(self.inclinaison))/tan(theta_sonde)
           
         else:
@@ -373,7 +373,7 @@ class aiguille:
     
             #si le point courant est dans le plan, on continue de parcourir les points jusqu'à qu'un point ne soit plus valide
             if (xa <= x2 and xa >= x1) and (ya >= -sonde.largeur/2 and ya <= sonde.largeur/2):
-                h = dh
+                h += dh
     
             else:
                 verif = False
@@ -606,8 +606,9 @@ class MonAppli_jeu(QtGui.QMainWindow):
                               
                 self.echogra.x = dist_sonde
                 self.echogra.x = self.echogra.correction_xsonde()
-                if self.echogra.x != None: 
-                    self.echogra.x = (self.echogra.x - 0.60) /4 #position origine en metre    
+                if self.echogra.x != None:
+                    self.echogra.x = (self.echogra.x - 0.60) /4 #position origine en metre 
+                                                                #on divise par 2 min car les mesures ont été fait sur 10cm et les images ne vont qu a 5cm
                 
                 self.echogra.angle_x = donnees[3]+75
                 self.echogra.angle_y = donnees[4]+75
