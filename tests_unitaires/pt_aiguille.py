@@ -13,12 +13,14 @@ h_aiguille = 0.19 #distance extremite-boule de marquage de l'aiguille
 h_sonde = 0.125
 l_sonde = 0.07
 
+
 def orientation(sonde, aiguille):
     
     """ Calcule l'orientation de l'aiguille par rapport a la sonde comme decrit dans le rapport 
     sonde et aiguille sont les coordonnees x,y"""
 
     return atan2((aiguille[0] - sonde[0]), (aiguille[1] - sonde[1])) #atan2(y, x) retourne atan(y/x) en tenant compte des signes
+
 
 
 def pt_ponction(sonde, aiguille, theta_aiguille):
@@ -33,6 +35,7 @@ def pt_ponction(sonde, aiguille, theta_aiguille):
     yp = aiguille[1] - h_aiguille*cos(theta_aiguille)*cos(phi)
     
     return xp, yp
+
 
 
 
@@ -51,32 +54,34 @@ def pt_extremite(sonde, aiguille, theta_aiguille, profondeur):
     return xe, ye, ze
 
 
+
 def pt_aig(sonde, aiguille, theta_aiguille, h):
         
     """ Retourne les coordonnees d'un point de l'aiguille situe a une profondeur h """
     
-    ponct = pt_ponction(sonde, aiguille, theta_aiguille)
+    xp, yp = pt_ponction(sonde, aiguille, theta_aiguille)
     phi = orientation(sonde, aiguille)
     
     theta_aiguille = radians(theta_aiguille)
     
-    x = ponct[0] - h * cos(theta_aiguille) * sin(phi)
-    y = ponct[1] - h * cos(theta_aiguille) * cos(phi)
+    x = xp - h * cos(theta_aiguille) * sin(phi)
+    y = yp - h * cos(theta_aiguille) * cos(phi)
     z = -h * sin(theta_aiguille)
     
     return x, y, z
+
 
   
 def intervalle_plan(sonde, aiguille, theta_sonde, theta_aiguille, z, epsilon = 0.1):
         
     """ Retourne les x pour lesquels l'aiguille est dans le plan de la sonde """
 
-    theta_sonde = radians(theta_sonde)
 
     #Si la sonde n est pas inclinee on simplifie le probleme
     if (theta_sonde > 87 and theta_sonde < 93) or (theta_sonde == 0):
         x_N = sonde[0]
 
+    #sinon voir details dans le rapport
     elif theta_sonde < 87:
         x_N = sonde[0] - (h_sonde * sin(radians(theta_sonde)) + z*sin(radians(theta_aiguille)))/tan(radians(theta_sonde))
       
@@ -85,6 +90,7 @@ def intervalle_plan(sonde, aiguille, theta_sonde, theta_aiguille, z, epsilon = 0
         
     return x_N - epsilon/2, x_N + epsilon/2
     
+
 
 
 def dernier_pt_visible(sonde, aiguille, theta_sonde, theta_aiguille, profondeur, epsilon = 0.02, dh = 0.005):
@@ -99,7 +105,7 @@ def dernier_pt_visible(sonde, aiguille, theta_sonde, theta_aiguille, profondeur,
     while verif == True and h < profondeur:
 
         xa, ya, za = pt_aig(sonde, aiguille, theta_aiguille, h) #point de l'aiguille courant
-        x1, x2 = intervalle_plan(sonde, aiguille, theta_sonde, theta_aiguille, h, epsilon)
+        x1, x2 = intervalle_plan(sonde, aiguille, theta_sonde, theta_aiguille, h)
 
         #si le point courant est dans le plan, on continue de parcourir les points jusqu'à qu'un point ne soit plus valide
         if (xa <= x2 and xa >= x1) and (ya >= -l_sonde/2 and ya <= l_sonde/2):
@@ -112,11 +118,17 @@ def dernier_pt_visible(sonde, aiguille, theta_sonde, theta_aiguille, profondeur,
     return ya, za
 
     
+
 if __name__ == "__main__":
     
     sonde = [0, 0]
     aiguille = [0.1, 0.1]
-    profondeur = 2
+    profondeur = 0.02
+    theta_sonde = 90
     theta_aiguille = 45
-    
+
+    print(pt_ponction(sonde, aiguille, theta_aiguille))
     print(pt_extremite(sonde, aiguille, profondeur, theta_aiguille))
+    print(pt_aig(sonde, aiguille, theta_aiguille, profondeur))
+    print(intervalle_plan(sonde, aiguille, theta_sonde, theta_aiguille, profondeur))
+    print(dernier_pt_visible(sonde, aiguille, theta_sonde, theta_aiguille, profondeur))
