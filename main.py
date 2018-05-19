@@ -369,15 +369,14 @@ class aiguille:
     
             xa, ya, za = self.pt_aig(sonde, h) #point de l'aiguille courant
             x1, x2 = self.intervalle_plan(sonde, h, epsilon)
-    
-            #si le point courant est dans le plan, on continue de parcourir les points jusqu'à qu'un point ne soit plus valide
+                
             if (xa <= x2 and xa >= x1) and (ya >= -sonde.largeur/2 and ya <= sonde.largeur/2):
                 pt_dans_plan = True
                 # on sort de la boucle while est on recupere le dernier point de l'aiguille bon à afficher: xa, ya, za 
     
             else:
                 h += dh
-        
+                #si le point courant n'est pas dans le plan, on continue de parcourir les points jusqu'à qu'un point soit valide
         return ya, za, h
     
     def dernier_pt_visible(self, sonde, epsilon = 0.02, dh = 0.0005):
