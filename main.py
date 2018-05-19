@@ -355,8 +355,30 @@ class aiguille:
             x_N = - (sonde.x - (sonde.longueur * sin(theta_sonde) + z*sin(self.inclinaison))/tan(theta_sonde))
             
         return x_N - epsilon/2, x_N + epsilon/2
+   
+    def premier_pt_visible(self, sonde, epsilon = 0.02, dh = 0.005):
+        """ Retourne les coordonnees du premier point de l'aiguille situe dans le plan de la sonde (point visible) """
+        #marge: pour la fluctuation des capteurs
+        #dh: pas de parcourt des points de l'aiguille
+        h = 0
+        ya = 0
+        za = 0
+        pt_dans_plan = False
+        
+        while pt_dans_plan == False and h < self.prof:
     
+            xa, ya, za = self.pt_aig(sonde, h) #point de l'aiguille courant
+            x1, x2 = self.intervalle_plan(sonde, h, epsilon)
     
+            #si le point courant est dans le plan, on continue de parcourir les points jusqu'à qu'un point ne soit plus valide
+            if (xa <= x2 and xa >= x1) and (ya >= -sonde.largeur/2 and ya <= sonde.largeur/2):
+                pt_dans_plan = True
+                # on sort de la boucle while est on recupere le dernier point de l'aiguille bon à afficher: xa, ya, za 
+    
+            else:
+                h += dh
+        
+        return ya, za, h
     
     def dernier_pt_visible(self, sonde, epsilon = 0.02, dh = 0.0005):
         """ Retourne les coordonnees du dernier point de l'aiguille situe dans le plan de la sonde (point visible) """
