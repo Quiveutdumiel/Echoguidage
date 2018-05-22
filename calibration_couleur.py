@@ -12,11 +12,11 @@ global colorLower_sonde, colorUpper_sonde, colorLower_aiguille, colorUpper_aigui
 
 ############################################
 #HSV de la sonde et de l aiguille
-colorLower_sonde = (16, 101, 129)
-colorUpper_sonde = (27, 255, 255) #jaune
+colorLower_sonde = (16, 114, 114)
+colorUpper_sonde = (33, 255, 255) #jaune
     
-colorLower_aiguille = (81, 40, 110)
-colorUpper_aiguille = (107, 255, 255) #bleu
+colorLower_aiguille = (89, 89, 90)
+colorUpper_aiguille = (117, 255, 255) #bleu
 ############################################
 
 def nothing(x):
@@ -33,11 +33,11 @@ if __name__ == '__main__':
 ###########################################
     #Selectionner la couleur a calibrer:
     
-    #colorLower = colorLower_aiguille
-    #colorUpper = colorUpper_aiguille
+    colorLower = colorLower_aiguille
+    colorUpper = colorUpper_aiguille
 
-    colorLower = colorLower_sonde
-    colorUpper = colorUpper_sonde
+    #colorLower = colorLower_sonde
+    #colorUpper = colorUpper_sonde
 ###########################################
     
     Hl = 0
@@ -92,7 +92,7 @@ if __name__ == '__main__':
             ((x, y), radius) = cv2.minEnclosingCircle(cnt)
             center = (int(x),int(y))
             radius = int(radius)
-            print("Rayon du cercle en pixels: ", radius)
+            #print("Rayon du cercle en pixels: ", radius)
             cv2.circle(frame,center,radius,(0,255,0),2)
             #print(cv2.minEnclosingCircle(cnt))
             

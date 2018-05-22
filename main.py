@@ -4,7 +4,7 @@ Created on Sun Apr 30 15:31:46 2017
 
 @author: Echoguidage
 """
-from math import atan, cos, sin, sqrt, pi, radians, tan
+from math import atan2, cos, sin, sqrt, pi, radians, tan
 import serial
 import time
 from threading import Timer
@@ -15,7 +15,6 @@ from interface_menu import Ui_menu_principal
 import os 
 import numpy as np
 from mesure_dist import *
-from math import atan2, cos, sin, tan, pi, radians
 
 ########### Pour la visu camera
 from detection_balles import *
@@ -41,7 +40,7 @@ class echographie:
         self.__angle_x = angle_x
         self.__angle_y = angle_y
         self.__angle_z = angle_z
-        self.longueur = 0.125 #distance entre la base de la sonde et la balle en metre
+        self.longueur = 0.17 #distance entre la base de la sonde et la balle en metre
         self.largeur = 0.07 #largeur de la sonde
         
     @property
@@ -157,7 +156,7 @@ class aiguille:
         self.__prof = prof
         self.__inj = inj
         self.longueur = 0.19 #distance entre la pointe de l'aiguille et la balle en metre
-        self.hauteur_capteur = 90 #distance pointe-capteur infrarouge en mm
+        self.hauteur_capteur = 105 #distance pointe-capteur infrarouge en mm
         
     @property
     def x(self):
@@ -355,51 +354,59 @@ class aiguille:
             x_N = - (sonde.x - (sonde.longueur * sin(theta_sonde) + z*sin(self.inclinaison))/tan(theta_sonde))
             
         return x_N - epsilon/2, x_N + epsilon/2
+
+    
    
     def premier_pt_visible(self, sonde, epsilon = 0.02, dh = 0.005):
-        """ Retourne les coordonnees du premier point de l'aiguille situe dans le plan de la sonde (point visible) """
-        #marge: pour la fluctuation des capteurs
-        #dh: pas de parcourt des points de l'aiguille
+        
+        """ Retourne les coordonnees du premier point de l'aiguille situe dans le plan de la sonde (point visible). epsilon: marge d'erreur due à la fluctuation des capteurs. dh: pas de parcourt des points de l'aiguille en metres"""
+        
         h = 0
         ya = 0
         za = 0
         pt_dans_plan = False
-        
+
+        #Tant que le point n est pas dans le plan 
         while pt_dans_plan == False and h < self.prof:
     
             xa, ya, za = self.pt_aig(sonde, h) #point de l'aiguille courant
-            x1, x2 = self.intervalle_plan(sonde, h, epsilon)
-                
-            if (xa <= x2 and xa >= x1) and (ya >= -sonde.largeur/2 and ya <= sonde.largeur/2):
+            x1, x2 = self.intervalle_plan(sonde, h, epsilon) #intervalle en x où le point est dans le plan
+
+            #en y le point doit se situer entre -sonde.largeur/2 et sonde.largeur/2
+            #Si le point appartient au plan
+            #on sort de la boucle while est on recupere le dernier point de l'aiguille bon à afficher: xa, ya, za 
+            if (xa <= x2 and xa >= x1) and (abs(ya) <= sonde.largeur/2):
                 pt_dans_plan = True
-                # on sort de la boucle while est on recupere le dernier point de l'aiguille bon à afficher: xa, ya, za 
-    
+
+            #sinon si le point courant n'est pas dans le plan,
+            #on continue de parcourir les points jusqu'à qu'un point soit valide
             else:
                 h += dh
-                #si le point courant n'est pas dans le plan, on continue de parcourir les points jusqu'à qu'un point soit valide
+                
         return ya, za, h
+
     
-    def dernier_pt_visible(self, sonde, epsilon = 0.02, dh = 0.0005):
-        """ Retourne les coordonnees du dernier point de l'aiguille situe dans le plan de la sonde (point visible) """
-        #marge: pour la fluctuation des capteurs
-        #dh: pas de parcourt des points de l'aiguille
-        h = 0
-        ya = self.y
-        za = 0
+    
+    def dernier_pt_visible(self, sonde, epsilon = 0.02, dh = 0.005):
+        
+        """ Retourne les coordonnees du dernier point de l'aiguille situe dans le plan de la sonde (point visible). epsilon: marge d'erreur due à la fluctuation des capteurs. dh: pas de parcourt des points de l'aiguille en metres"""
+
+        ya, za, h = self.premier_pt_visible(sonde, epsilon, dh) #on part du premier point visible
+
         pt_dans_plan = True
         
         while pt_dans_plan == True and h < self.prof:
     
             xa, ya, za = self.pt_aig(sonde, h) #point de l'aiguille courant
-            x1, x2 = self.intervalle_plan(sonde, h, epsilon)
+            x1, x2 = self.intervalle_plan(sonde, h, epsilon) #intervalle en abscisse où le point est dans le plan
     
-            #si le point courant est dans le plan, on continue de parcourir les points jusqu'à qu'un point ne soit plus valide
-            if (xa <= x2 and xa >= x1) and (ya >= -sonde.largeur/2 and ya <= sonde.largeur/2):
+            #si le point courant est dans le plan,
+            #on continue de parcourir les points jusqu'à qu'un point ne soit plus valide
+            if (xa <= x2 and xa >= x1) and (abs(ya) <= sonde.largeur/2):
                 h += dh
     
             else:
                 pt_dans_plan = False
-                # on sort de la boucle while est on recupere le dernier point de l'aiguille bon à afficher: xa, ya, za 
         
         return ya, za
     
@@ -420,10 +427,13 @@ class aiguille:
             xo = 730    
             yo = 0
             
-            #point visible dans le plan de la sonde
-            #V = self.dernier_pt_visible(sonde)
-            #xv = conv_x*V[0] + 205
-            #yv = -conv_y*V[1]
+            #points visibles dans le plan de la sonde
+            #V1 = self.premier_pt_visible(sonde)
+            #V2 = self.dernier_pt_visible(sonde)
+            #xv1 = conv_x*V1[0] + 205
+            #yv1 = -conv_y*V1[1]
+            #xv2 = conv_x*V2[0] + 205
+            #yv2 = -conv_y*V2[1]
 
             #tests sans prendre en compte le plan
             extremite = self.pt_extremite(sonde)            
@@ -432,6 +442,7 @@ class aiguille:
             
             qp.setPen( QtGui.QPen(QtCore.Qt.gray,3 ) )
             qp.drawLine(xo, yo, xe, ye)
+            #qp.drawLine(xv1, yv1, xv2, yv2)
 
         
     def dessininjection(self, qp,sonde):
@@ -581,12 +592,16 @@ class MonAppli_jeu(QtGui.QMainWindow):
                 donnees = [float(x) for x in donnees]#profondeur (en mm) / 0 ou 1 bouton / angle x sonde/
                 #angle y sonde / angle z sonde / angle x aiguille / angle y aiguille / angle z aiguille /
                               
-                self.echogra.x = 0.6
-                #self.echogra.x = dist_sonde
+                dilatation_espace = 1.0/30.0
+                dist_origine = 0.00 #position origine en metre
+                
+                #self.echogra.x = 0.6
+                self.echogra.x = dist_sonde
+                self.echogra.y = 0
                 #self.echogra.x = self.echogra.correction_xsonde()
                 if self.echogra.x != None:
-                    dist_origine = 0.30 #position origine en metre
-                    self.echogra.x = (self.echogra.x - dist_origine) / 30
+                    
+                    self.echogra.x = (self.echogra.x - dist_origine) * dilatation_espace
                     #on divise pour augmenter le nb d images par cm
                 
                 self.echogra.angle_x = donnees[3]+75
@@ -596,13 +611,19 @@ class MonAppli_jeu(QtGui.QMainWindow):
                 self.echogra.angle_z = 90
                 
                 self.aigu.x = self.echogra.x
+                #self.aigu.x = dist_aiguille
+                #if dist_aiguille != None:
+                    #self.aigu.x = (dist_aiguille - dist_origine) * dilatation_espace
+                    
                 #self.aigu.y = ya
                 self.aigu.y = 0.05
                 
                 self.aigu.angle_x = donnees[0]-45
                 self.aigu.angle_y = donnees[1]-45
                 self.aigu.angle_z = donnees[2]-45
-                self.aigu.inclinaison = atan2(self.aigu.angle_y, self.aigu.angle_z)*57.3 - 10
+                self.aigu.inclinaison = atan2(self.aigu.angle_y, self.aigu.angle_z)*57.3 - 42
+                self.aigu.inclinaison = 180 - self.aigu.inclinaison #inversion des angles pour un côté pratique: le capteur de distance pointait vers la main qui tennait la sonde
+                self.aigu.inclinaison = round(self.aigu.inclinaison,1) #on tronque pour ameliorer la stabilite de l'aiguille
                 self.aigu.prof = self.aigu.hauteur_capteur - donnees[6] #en mm
                 #self.aigu.prof = 20
                 
@@ -642,7 +663,7 @@ class MonAppli_jeu(QtGui.QMainWindow):
             self.ui.label_aigu_y.setText(str(round(self.aigu.y*100,2))+"cm")
             
         self.ui.label_aigu_angle_name.setText("inclinaison_aiguille:")
-        self.ui.label_aigu_angle.setText(str(round(self.aigu.inclinaison,2))+"°")
+        self.ui.label_aigu_angle.setText(str(self.aigu.inclinaison)+"°")
         
         self.ui.label_aigu_prof_name.setText("profondeur_aiguille:")
         self.ui.label_aigu_prof.setText(str(self.aigu.prof)+"mm")
@@ -689,7 +710,7 @@ if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)
     #change ACM number as found from ls /dev/tty*
     #ser=serial.Serial("/dev/ttyACM0",9600) #linux
-    ser=serial.Serial("\\\\.\\COM4",9600) #windows
+    ser=serial.Serial("\\\\.\\COM5",9600) #windows
     #ser=serial.Serial("\\\\.\\COM6",9600) #sur pc portable
     ser.baudrate=9600
     window = MonAppli_menu()
