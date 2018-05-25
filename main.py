@@ -4,7 +4,7 @@ Created on Sun Apr 30 15:31:46 2017
 
 @author: Echoguidage
 """
-from math import atan2, cos, sin, sqrt, pi, radians, tan
+from math import atan2, cos, sin, sqrt, pi, radians, tan, degrees
 import serial
 import time
 from threading import Timer
@@ -17,18 +17,19 @@ import numpy as np
 from mesure_dist import *
 
 ########### Pour la visu camera
-#from detection_balles import *
+from detection_balles import *
 ###############################
 
 global pos
 pos = []
 
-global dilatation_espace, dist_origine, epsilon
+global dilatation_espace, dist_origine, epsilon, offset_angle_sonde, offset_angle_aiguille
 
 dilatation_espace = 1.0/15.0 #Constante pour ameliorer la fluidite de l'affichage des images echographiques
 dist_origine = 0.30 - 0.0086/dilatation_espace #Origine du repère: 30cm de la sonde suivant l'axe x, la première image étant à 0.86cm
-epsilon = 0.02*dilatation_espace #marge d'erreur due aux fluctuations des capteurs
-
+epsilon = 0.04*dilatation_espace #marge d'erreur due aux fluctuations des capteurs
+offset_angle_sonde = 75
+offset_angle_aiguille = -25
 
 class echographie:
     """ Classe definissant la sonde echographique """
@@ -160,7 +161,7 @@ class aiguille:
         self.__inclinaison = inclinaison
         self.__prof = prof
         self.__inj = inj
-        self.longueur = 0.19 #distance entre la pointe de l'aiguille et la balle en metre
+        self.longueur = 0.17 #distance entre la pointe de l'aiguille et la balle en metre
         self.hauteur_capteur = 105 #distance pointe-capteur infrarouge en mm
         
     @property
@@ -279,7 +280,8 @@ class aiguille:
         if ya == ys or xs == None or xa == None or ys == None or ya == None:
             return 0
         else:
-            return atan2(xa-xs, ya-ys)
+            #return atan2(xa-xs, ya-ys)
+            return 0
 
 
 
@@ -293,8 +295,9 @@ class aiguille:
 
         phi = self.orientation(sonde)
         ####################
-        #print("Orientation", phi)
+        #print("Orientation", degrees(phi))
         ####################
+        
         theta_aiguille = radians(self.inclinaison)
         
         xp = xa - self.longueur*cos(theta_aiguille)*sin(phi)
@@ -338,6 +341,7 @@ class aiguille:
         #Sinon 
         else:
             x_N = sonde.x - (sonde.longueur * sin(theta_sonde) + z*sin(self.inclinaison))/tan(theta_sonde)
+
           
         return x_N - epsilon/2, x_N + epsilon/2
         
@@ -353,19 +357,19 @@ class aiguille:
         profondeur = self.prof*10**(-3) #profondeur donnee en millimetres par la carte Arduino
 
         x1, x2 = self.intervalle_plan(sonde, profondeur)
-        print('Intervalle de validite de la sonde', [x1*100,x2*100])
+        print('Intervalle de validite de la sonde en cm : ', [x1*100,x2*100])
         
         xe = ponct[0] - profondeur * cos(theta_aiguille) * sin(phi) 
         ye = ponct[1] - profondeur * cos(theta_aiguille) * cos(phi) 
         ze = -profondeur * sin(theta_aiguille)
             
         #Si l'aiguille est dans le plan on peut afficher le point d'injection aux coordonnees suivantes
-        if (xe <= x2 and xe >= x1) and (ye <= sonde.largeur/2):
+        if (xe <= x2 and xe >= x1):
             return [xe, ye, ze] #ye ze utiles pour l IHM
             
         #Sinon on affiche rien du tout
         else:
-            return [0, 0, 0]
+            return [0, 730/((730.0-205.0)/0.05), 0] #730/((730.0-205.0)/0.05) est l'origine de l'aiguille dans le repère de l'image échographique en pixels
 
 
 
@@ -477,7 +481,7 @@ class aiguille:
             qp.setPen( QtGui.QPen(QtCore.Qt.gray,3 ) )
             #qp.drawLine(xo, yo, xe, ye) #Sans plan sonde
             qp.drawLine(xo, yo, xsimple, ysimple) #Avec plan sonde
-            #qp.drawLine(xv1, yv1, xv2, yv2) #Version finale avec plan sonde
+            #qp.drawLine(xv1, yv1, xv2, yv2) #Version finale avec plan sonde: impossible à réaliser, l'intervalle fluctue beaucoup trop
 
         
     def dessininjection(self, qp,sonde):
@@ -595,11 +599,11 @@ class MonAppli_jeu(QtGui.QMainWindow):
         ret, frame = self.cam.read()
         
         ######################### Visu camera
-        #mask_sonde0, mask_aiguille0 = traitement(frame)
-        #contours_sonde0, contours_aiguille0 = detect_contours(frame, mask_sonde0, mask_aiguille0)
-        #dist_sonde0 = dist_cam_object(frame, contours_sonde0, 0, "sonde")
-        #dist_aig = dist_cam_object(frame, contours_aiguille0, 0, "aiguille")
-        #cv2.imshow('frame', frame)
+        mask_sonde0, mask_aiguille0 = traitement(frame)
+        contours_sonde0, contours_aiguille0 = detect_contours(frame, mask_sonde0, mask_aiguille0)
+        dist_sonde0 = dist_cam_object(frame, contours_sonde0, 0, "sonde")
+        dist_aig = dist_cam_object(frame, contours_aiguille0, 0, "aiguille")
+        cv2.imshow('frame', frame)
         ###########################
 
 
@@ -627,7 +631,6 @@ class MonAppli_jeu(QtGui.QMainWindow):
                 donnees = [float(x) for x in donnees]#profondeur (en mm) / 0 ou 1 bouton / angle x sonde/
                 #angle y sonde / angle z sonde / angle x aiguille / angle y aiguille / angle z aiguille /
                               
-                #self.echogra.x = 0.6
                 self.echogra.x = dist_sonde
                 self.echogra.y = 0
                 self.echogra.x = self.echogra.correction_xsonde()
@@ -636,31 +639,27 @@ class MonAppli_jeu(QtGui.QMainWindow):
                     self.echogra.x = (self.echogra.x - dist_origine) * dilatation_espace
                     #on divise pour augmenter le nb d images par cm
                 
-                self.echogra.angle_x = donnees[3]+75
-                self.echogra.angle_y = donnees[4]+75
+                #self.echogra.angle_x = donnees[3]+75
+                #self.echogra.angle_y = donnees[4]+75
                 
-                self.echogra.angle_z = donnees[5]+75
-                #self.echogra.angle_z = 90
+                self.echogra.angle_z = donnees[5]+offset_angle_sonde
                 
-                #self.aigu.x = self.echogra.x
                 self.aigu.x = dist_aiguille
                 if dist_aiguille != None:
                     self.aigu.x = (dist_aiguille - dist_origine) * dilatation_espace
 
                 self.aigu.y = ya
                 if ya != None:
-                    self.aigu.y = ya / 2
-                self.aigu.y = 0.05
+                    self.aigu.y = ya
+                #self.aigu.y = 0.05
                 
-                self.aigu.angle_x = donnees[0]-45
+                #self.aigu.angle_x = donnees[0]-45
                 self.aigu.angle_y = donnees[1]-45
                 self.aigu.angle_z = donnees[2]-45
-                self.aigu.inclinaison = atan2(self.aigu.angle_y, self.aigu.angle_z)*57.3 - 42
+                self.aigu.inclinaison = atan2(self.aigu.angle_y, self.aigu.angle_z)*57.3 + offset_angle_aiguille
                 self.aigu.inclinaison = 180 - self.aigu.inclinaison #inversion des angles pour un côté pratique: le capteur de distance pointait vers la main qui tennait la sonde
                 self.aigu.inclinaison = round(self.aigu.inclinaison,1) #on tronque pour ameliorer la stabilite de l'aiguille
                 self.aigu.prof = self.aigu.hauteur_capteur - donnees[6] #en mm
-                #self.aigu.prof = 20
-                
                 self.aigu.inj = donnees[7]
                 
                 self.ui.centralwidget.update()
