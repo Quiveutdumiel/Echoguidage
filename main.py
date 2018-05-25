@@ -17,12 +17,17 @@ import numpy as np
 from mesure_dist import *
 
 ########### Pour la visu camera
-from detection_balles import *
+#from detection_balles import *
 ###############################
 
 global pos
 pos = []
 
+global dilatation_espace, dist_origine, epsilon
+
+dilatation_espace = 1.0/15.0 #Constante pour ameliorer la fluidite de l'affichage des images echographiques
+dist_origine = 0.30 - 0.0086/dilatation_espace #Origine du repère: 30cm de la sonde suivant l'axe x, la première image étant à 0.86cm
+epsilon = 0.02*dilatation_espace #marge d'erreur due aux fluctuations des capteurs
 
 
 class echographie:
@@ -105,12 +110,12 @@ class echographie:
 
 
 
-    def correction_xsonde(self, hs = 0.08):
+    def correction_xsonde(self):
         """ Permet de corriger la position de la sonde en fonction de son inclinaison """
         if self.x == None:
             return None
         else:
-            return self.x  - hs * cos(radians(self.angle_z))
+            return self.x  - self.longueur * cos(radians(self.angle_z))
 
         
     def dessinimage(self, qp):
@@ -295,13 +300,11 @@ class aiguille:
         xp = xa - self.longueur*cos(theta_aiguille)*sin(phi)
         yp = ya - self.longueur*cos(theta_aiguille)*cos(phi)
 
-        #print(xp,yp)
-        
         return [xp, yp]
 
 
 
-    def pt_extremite(self,sonde):
+    def pt_extremite(self, sonde):
         
         """ Retourne les coordonnees du point d'injection """
         
@@ -309,18 +312,66 @@ class aiguille:
         
         phi = self.orientation(sonde)
         theta_aiguille = radians(self.inclinaison)
-        profondeur = self.prof*10**(-3) #profondeur donnee en millimetres par la carte
+        profondeur = self.prof*10**(-3) #profondeur donnee en millimetres par la carte Arduino
+
+        xe = ponct[0] - profondeur * cos(theta_aiguille) * sin(phi) 
+        ye = ponct[1] - profondeur * cos(theta_aiguille) * cos(phi) 
+        ze = -profondeur * sin(theta_aiguille)
+            
+        return [xe, ye, ze] #ye, ze utiles pour l'IHM
+        
+    
+    
+    def intervalle_plan(self, sonde, z):
+        
+        """ Retourne les x pour lesquels l'aiguille est dans le plan de la sonde  """
+    
+        theta_sonde = radians(sonde.angle_z)
+
+        if sonde.x == None or sonde.angle_z == 0:
+            return -10, -10 #on place l'intervalle hors de la zone de travail si on ne detecte pas la sonde
+  
+        #Si la sonde n est pas inclinee on simplifie le probleme
+        if (sonde.angle_z > 83 and sonde.angle_z < 97):
+            x_N = sonde.x
+
+        #Sinon 
+        else:
+            x_N = sonde.x - (sonde.longueur * sin(theta_sonde) + z*sin(self.inclinaison))/tan(theta_sonde)
+          
+        return x_N - epsilon/2, x_N + epsilon/2
+        
+    
+    def pt_simplifie(self, sonde):
+        
+        """ Retourne les coordonnees du point de l'extremite de l'aiguille s'il est dans le plan de la sonde """
+        
+        ponct = self.pt_ponction(sonde)
+        
+        phi = self.orientation(sonde)
+        theta_aiguille = radians(self.inclinaison)
+        profondeur = self.prof*10**(-3) #profondeur donnee en millimetres par la carte Arduino
+
+        x1, x2 = self.intervalle_plan(sonde, profondeur)
+        print('Intervalle de validite de la sonde', [x1*100,x2*100])
         
         xe = ponct[0] - profondeur * cos(theta_aiguille) * sin(phi) 
         ye = ponct[1] - profondeur * cos(theta_aiguille) * cos(phi) 
         ze = -profondeur * sin(theta_aiguille)
-        
-        return [xe, ye, ze]  #ye ze utiles pour l IHM
+            
+        #Si l'aiguille est dans le plan on peut afficher le point d'injection aux coordonnees suivantes
+        if (xe <= x2 and xe >= x1) and (ye <= sonde.largeur/2):
+            return [xe, ye, ze] #ye ze utiles pour l IHM
+            
+        #Sinon on affiche rien du tout
+        else:
+            return [0, 0, 0]
+
 
 
     def pt_aig(self, sonde, h):
         
-        """ Retourne les coordonnees d'un point de l'aiguille situe a une profondeur h """
+        """ Retourne les coordonnees d'un point de l'aiguille situe a une profondeur h en metres"""
         
         ponct = self.pt_ponction(sonde)
         
@@ -334,32 +385,10 @@ class aiguille:
         return x, y, z
    
     
-    
-    def intervalle_plan(self, sonde, z, epsilon = 0.02):
-        
-        """ Retourne les x pour lesquels l'aiguille est dans le plan de la sonde 
-        epsilon: marge d'erreur due aux fluctuations des capteurs """
-    
-        theta_sonde = radians(sonde.angle_z)
-        
-        #Si la sonde n est pas inclinee on simplifie le probleme
-        if (sonde.angle_z > 87 and sonde.angle_z < 93) or (sonde.angle_z == 0):
-            x_N = sonde.x
-
-        #Sinon 
-        elif sonde.angle_z < 87:
-            x_N = sonde.x - (sonde.longueur * sin(theta_sonde) + z*sin(self.inclinaison))/tan(theta_sonde)
-          
-        else:
-            x_N = - (sonde.x - (sonde.longueur * sin(theta_sonde) + z*sin(self.inclinaison))/tan(theta_sonde))
-            
-        return x_N - epsilon/2, x_N + epsilon/2
-
-    
    
-    def premier_pt_visible(self, sonde, epsilon = 0.02, dh = 0.005):
+    def premier_pt_visible(self, sonde, dh = 0.005):
         
-        """ Retourne les coordonnees du premier point de l'aiguille situe dans le plan de la sonde (point visible). epsilon: marge d'erreur due à la fluctuation des capteurs. dh: pas de parcourt des points de l'aiguille en metres"""
+        """ Retourne les coordonnees du premier point de l'aiguille situe dans le plan de la sonde (point visible). dh: pas de parcourt des points de l'aiguille en metres"""
         
         h = 0
         ya = 0
@@ -370,7 +399,7 @@ class aiguille:
         while pt_dans_plan == False and h < self.prof:
     
             xa, ya, za = self.pt_aig(sonde, h) #point de l'aiguille courant
-            x1, x2 = self.intervalle_plan(sonde, h, epsilon) #intervalle en x où le point est dans le plan
+            x1, x2 = self.intervalle_plan(sonde, h) #intervalle en x où le point est dans le plan
 
             #en y le point doit se situer entre -sonde.largeur/2 et sonde.largeur/2
             #Si le point appartient au plan
@@ -387,18 +416,18 @@ class aiguille:
 
     
     
-    def dernier_pt_visible(self, sonde, epsilon = 0.02, dh = 0.005):
+    def dernier_pt_visible(self, sonde, dh = 0.005):
         
-        """ Retourne les coordonnees du dernier point de l'aiguille situe dans le plan de la sonde (point visible). epsilon: marge d'erreur due à la fluctuation des capteurs. dh: pas de parcourt des points de l'aiguille en metres"""
+        """ Retourne les coordonnees du dernier point de l'aiguille situe dans le plan de la sonde (point visible). dh: pas de parcourt des points de l'aiguille en metres"""
 
-        ya, za, h = self.premier_pt_visible(sonde, epsilon, dh) #on part du premier point visible
+        ya, za, h = self.premier_pt_visible(sonde, dh) #on part du premier point visible
 
         pt_dans_plan = True
         
         while pt_dans_plan == True and h < self.prof:
     
             xa, ya, za = self.pt_aig(sonde, h) #point de l'aiguille courant
-            x1, x2 = self.intervalle_plan(sonde, h, epsilon) #intervalle en abscisse où le point est dans le plan
+            x1, x2 = self.intervalle_plan(sonde, h) #intervalle en abscisse où le point est dans le plan
     
             #si le point courant est dans le plan,
             #on continue de parcourir les points jusqu'à qu'un point ne soit plus valide
@@ -420,11 +449,11 @@ class aiguille:
             return
         else:
             conv_x = (730.0-205.0)/0.05 #conversion metres en pixels
-            conv_y = 670.0/0.05 #conversion metres en pixels
+            conv_y = 670.0/0.04 #conversion metres en pixels
             #x image de 205 a 730 pixels 
             #y image de 0 a 670 pixel
             
-            xo = 730    
+            xo = 205
             yo = 0
             
             #points visibles dans le plan de la sonde
@@ -436,13 +465,19 @@ class aiguille:
             #yv2 = -conv_y*V2[1]
 
             #tests sans prendre en compte le plan
-            extremite = self.pt_extremite(sonde)            
-            xe = conv_x*extremite[1] + 205
-            ye = -conv_y*extremite[2]
+            #extremite = self.pt_extremite(sonde)
+            #xe = 730 - conv_x*extremite[1] + 205 #730 - x pour un soucis d origine sur l image, on fait une symetrie
+            #ye = -conv_y*extremite[2]
+            
+            #tests simplifies en tenant compte du plan de la sonde
+            pt_simple = self.pt_simplifie(sonde)
+            xsimple = 730 - conv_x*pt_simple[1] + 205
+            ysimple = -conv_y*pt_simple[2]
             
             qp.setPen( QtGui.QPen(QtCore.Qt.gray,3 ) )
-            qp.drawLine(xo, yo, xe, ye)
-            #qp.drawLine(xv1, yv1, xv2, yv2)
+            #qp.drawLine(xo, yo, xe, ye) #Sans plan sonde
+            qp.drawLine(xo, yo, xsimple, ysimple) #Avec plan sonde
+            #qp.drawLine(xv1, yv1, xv2, yv2) #Version finale avec plan sonde
 
         
     def dessininjection(self, qp,sonde):
@@ -454,17 +489,17 @@ class aiguille:
             pass
         else:
             conv_x = (730.0-205.0)/0.05 #conversion centimetre en pixels
-            conv_y = 670.0/0.05 #conversion centimetre en pixels
+            conv_y = 670.0/0.04 #conversion centimetre en pixels
 
             extremite = self.pt_extremite(sonde)
             
-            xe = conv_x*extremite[1] + 205
+            xe = 730 - conv_x*extremite[1] + 205
             ye = -conv_y*extremite[2]
             
             pos.append([xe,ye]) #pour ne pas que le point disparaisse quand on relache le bouton
 
         for x in pos:
-            qp.setPen( QtGui.QPen(QtCore.Qt.red,10 ) )
+            qp.setPen( QtGui.QPen(QtCore.Qt.red, 10 ) )
             qp.drawPoint(x[0], x[1])
         
         
@@ -560,11 +595,11 @@ class MonAppli_jeu(QtGui.QMainWindow):
         ret, frame = self.cam.read()
         
         ######################### Visu camera
-        mask_sonde0, mask_aiguille0 = traitement(frame)
-        contours_sonde0, contours_aiguille0 = detect_contours(frame, mask_sonde0, mask_aiguille0)
-        dist_sonde0 = dist_cam_object(frame, contours_sonde0, 0, "sonde")
-        dist_aig = dist_cam_object(frame, contours_aiguille0, 0, "aiguille")
-        cv2.imshow('frame', frame)
+        #mask_sonde0, mask_aiguille0 = traitement(frame)
+        #contours_sonde0, contours_aiguille0 = detect_contours(frame, mask_sonde0, mask_aiguille0)
+        #dist_sonde0 = dist_cam_object(frame, contours_sonde0, 0, "sonde")
+        #dist_aig = dist_cam_object(frame, contours_aiguille0, 0, "aiguille")
+        #cv2.imshow('frame', frame)
         ###########################
 
 
@@ -592,13 +627,10 @@ class MonAppli_jeu(QtGui.QMainWindow):
                 donnees = [float(x) for x in donnees]#profondeur (en mm) / 0 ou 1 bouton / angle x sonde/
                 #angle y sonde / angle z sonde / angle x aiguille / angle y aiguille / angle z aiguille /
                               
-                dilatation_espace = 1.0/30.0
-                dist_origine = 0.00 #position origine en metre
-                
                 #self.echogra.x = 0.6
                 self.echogra.x = dist_sonde
                 self.echogra.y = 0
-                #self.echogra.x = self.echogra.correction_xsonde()
+                self.echogra.x = self.echogra.correction_xsonde()
                 if self.echogra.x != None:
                     
                     self.echogra.x = (self.echogra.x - dist_origine) * dilatation_espace
@@ -607,15 +639,17 @@ class MonAppli_jeu(QtGui.QMainWindow):
                 self.echogra.angle_x = donnees[3]+75
                 self.echogra.angle_y = donnees[4]+75
                 
-                #self.echogra.angle_z = donnees[5]+75
-                self.echogra.angle_z = 90
+                self.echogra.angle_z = donnees[5]+75
+                #self.echogra.angle_z = 90
                 
-                self.aigu.x = self.echogra.x
-                #self.aigu.x = dist_aiguille
-                #if dist_aiguille != None:
-                    #self.aigu.x = (dist_aiguille - dist_origine) * dilatation_espace
-                    
-                #self.aigu.y = ya
+                #self.aigu.x = self.echogra.x
+                self.aigu.x = dist_aiguille
+                if dist_aiguille != None:
+                    self.aigu.x = (dist_aiguille - dist_origine) * dilatation_espace
+
+                self.aigu.y = ya
+                if ya != None:
+                    self.aigu.y = ya / 2
                 self.aigu.y = 0.05
                 
                 self.aigu.angle_x = donnees[0]-45
@@ -710,8 +744,7 @@ if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)
     #change ACM number as found from ls /dev/tty*
     #ser=serial.Serial("/dev/ttyACM0",9600) #linux
-    ser=serial.Serial("\\\\.\\COM5",9600) #windows
-    #ser=serial.Serial("\\\\.\\COM6",9600) #sur pc portable
+    ser=serial.Serial("\\\\.\\COM4",9600) #windows
     ser.baudrate=9600
     window = MonAppli_menu()
     window.show()

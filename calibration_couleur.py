@@ -12,10 +12,10 @@ global colorLower_sonde, colorUpper_sonde, colorLower_aiguille, colorUpper_aigui
 
 ############################################
 #HSV de la sonde et de l aiguille
-colorLower_sonde = (16, 114, 114)
+colorLower_sonde = (16, 114, 175)
 colorUpper_sonde = (33, 255, 255) #jaune
     
-colorLower_aiguille = (89, 89, 90)
+colorLower_aiguille = (89, 89, 150)
 colorUpper_aiguille = (117, 255, 255) #bleu
 ############################################
 
@@ -32,12 +32,12 @@ if __name__ == '__main__':
     
 ###########################################
     #Selectionner la couleur a calibrer:
-    
-    colorLower = colorLower_aiguille
-    colorUpper = colorUpper_aiguille
+  
+    #Sonde
+    colorLower, colorUpper = colorLower_sonde, colorUpper_sonde
 
-    #colorLower = colorLower_sonde
-    #colorUpper = colorUpper_sonde
+    #Aiguille
+    #colorLower, colorUpper = colorLower_aiguille, colorUpper_aiguille
 ###########################################
     
     Hl = 0
