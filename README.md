@@ -1,7 +1,7 @@
 ##### Mode d'emploi du simulateur d'anesthésie locorégionale 
 ###### Echoguidage
 
-#Configuration
+# Configuration
 
 
 - Branchez la carte ARDUINO et la caméra sur des ports USB de l'ordinateur
@@ -15,14 +15,14 @@ Sous linux, le numéro du port COM est donné par la commande "dmesg -s 1024".
 - Entrez ce numéro dans le fichier main.py, ligne 25, dans la variable n_port_COM.
 
 
-'''python
+'''javascript
 global n_port_COM
 n_port_COM = 5
 '''
 
 
 
-#Lancement du simulateur
+# Lancement du simulateur
 
 
 - Lancez l'application IDLE.exe dans le dossier WinPython
@@ -36,7 +36,7 @@ n_port_COM = 5
 
 
 
-#Utilisation
+# Utilisation
 
 
 - Placez la caméra sur son support en face du pain de gel de telle sorte à ce que la caméra se trouve dans le prolongement de la longueur du pain de gel
