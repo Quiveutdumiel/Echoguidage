@@ -20,6 +20,10 @@ from mesure_dist import *
 from detection_balles import *
 ###############################
 
+
+global n_port_COM
+n_port_COM = 5
+
 global pos
 pos = []
 
@@ -644,14 +648,12 @@ class MonAppli_jeu(QtGui.QMainWindow):
                 
                 self.echogra.angle_z = donnees[5]+offset_angle_sonde
                 
-                self.aigu.x = dist_aiguille
+                self.aigu.x = math.sqrt(dist_aiguille**2 - ya**2)
+		#self.aigu.x = dist_aiguille
                 if dist_aiguille != None:
                     self.aigu.x = (dist_aiguille - dist_origine) * dilatation_espace
 
                 self.aigu.y = ya
-                if ya != None:
-                    self.aigu.y = ya
-                #self.aigu.y = 0.05
                 
                 #self.aigu.angle_x = donnees[0]-45
                 self.aigu.angle_y = donnees[1]-45
@@ -743,7 +745,7 @@ if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)
     #change ACM number as found from ls /dev/tty*
     #ser=serial.Serial("/dev/ttyACM0",9600) #linux
-    ser=serial.Serial("\\\\.\\COM4",9600) #windows
+    ser=serial.Serial("\\\\.\\COM{}".format(n_port_COM), 9600) #windows
     ser.baudrate=9600
     window = MonAppli_menu()
     window.show()
