@@ -15,10 +15,10 @@ Sous linux, le numéro du port COM est donné par la commande "dmesg -s 1024".
 - Entrez ce numéro dans le fichier main.py, ligne 25, dans la variable n_port_COM.
 
 
-'''javascript
+```python
 global n_port_COM
 n_port_COM = 5
-'''
+```
 
 
 
