@@ -26,12 +26,16 @@ n_port_COM = 5
 
 
 - Lancez l'application IDLE.exe dans le dossier WinPython
+
 - Ouvrez le fichier main.py à partir de cette application
+
 - Executez ce fichier en appuyant sur F5 
+
 - Sur l'Interface Homme Machine qui apparait, choisissez parmis un des scénario proposés (dans cette version, seul le nerf femoral est disponible)
+
 - Cliquez sur "Charger le scénario" puis sur "Lancer la simulation"
 
-(une erreur de compatibilité avec la carte Arduino peut survenir de temps en temps, ré-executez le fichier main.py)
+Une erreur de compatibilité avec la carte Arduino peut survenir de temps en temps, ré-executez le fichier main.py
 
 
 
