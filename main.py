@@ -648,8 +648,7 @@ class MonAppli_jeu(QtGui.QMainWindow):
                 
                 self.echogra.angle_z = donnees[5]+offset_angle_sonde
                 
-                self.aigu.x = math.sqrt(dist_aiguille**2 - ya**2)
-		#self.aigu.x = dist_aiguille
+                self.aigu.x = dist_aiguille
                 if dist_aiguille != None:
                     self.aigu.x = (dist_aiguille - dist_origine) * dilatation_espace
 
@@ -744,7 +743,7 @@ class MonAppli_jeu(QtGui.QMainWindow):
 if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)
     #change ACM number as found from ls /dev/tty*
-    #ser=serial.Serial("/dev/ttyACM0",9600) #linux
+    #ser=serial.Serial("/dev/ttyACM{}".format(n_port_COM), 9600) #linux
     ser=serial.Serial("\\\\.\\COM{}".format(n_port_COM), 9600) #windows
     ser.baudrate=9600
     window = MonAppli_menu()
