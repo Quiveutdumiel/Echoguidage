@@ -20,7 +20,11 @@ global n_port_COM
 n_port_COM = 5
 ```
 
+- Si vous travaillez sur ordinateur portable, il se peut que la caméra utilisée par le programme soit la caméra intégrée à l'ordinateur. Pour cela, modifiez le code main.py à la ligne 26. Modifiez la variable camera ordinateur: 1 si vous travaillez sur ordinateur portable avec une webcam, 0 sinon.
 
+```python
+camera_ordinateur = 1
+```
 
 # Lancement du simulateur
 
