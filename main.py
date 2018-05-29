@@ -21,8 +21,10 @@ from detection_balles import *
 ###############################
 
 
-global n_port_COM
+global n_port_COM, camera_ordinateur
 n_port_COM = 6
+camera_ordinateur = 1 #Mettre 1 si vous travaillez sur un ordinateur portable avec une webcam intégrée, 0 sinon
+
 
 global pos
 pos = []
@@ -563,8 +565,7 @@ class MonAppli_jeu(QtGui.QMainWindow):
         self.aigu = aiguille(0,0,0,0,0,0,0,0)
         self.stop = 0
         pos = []
-        #self.cam = cv2.VideoCapture(0)
-        self.cam = cv2.VideoCapture(1) #sur ordinateur portable pour ne pas utiliser la webcam de l'ordinateur
+        self.cam = cv2.VideoCapture(camera_ordinateur)
         self.ui.setupUi(self)
         self.ui.quitter.clicked.connect(self.quitter)
         self.ui.pause.clicked.connect(self.mettre_pause)
