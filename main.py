@@ -22,7 +22,7 @@ from detection_balles import *
 
 
 global n_port_COM
-n_port_COM = 5
+n_port_COM = 6
 
 global pos
 pos = []
@@ -31,7 +31,7 @@ global dilatation_espace, dist_origine, epsilon, offset_angle_sonde, offset_angl
 
 dilatation_espace = 1.0/15.0 #Constante pour ameliorer la fluidite de l'affichage des images echographiques
 dist_origine = 0.30 - 0.0086/dilatation_espace #Origine du repère: 30cm de la sonde suivant l'axe x, la première image étant à 0.86cm
-epsilon = 0.04*dilatation_espace #marge d'erreur due aux fluctuations des capteurs
+epsilon = 0.15*dilatation_espace #marge d'erreur due aux fluctuations des capteurs
 offset_angle_sonde = 75
 offset_angle_aiguille = -25
 
@@ -563,8 +563,8 @@ class MonAppli_jeu(QtGui.QMainWindow):
         self.aigu = aiguille(0,0,0,0,0,0,0,0)
         self.stop = 0
         pos = []
-        self.cam = cv2.VideoCapture(0)
-        #self.cam = cv2.VideoCapture(1) #sur ordinateur portable pour ne pas utiliser la webcam de l'ordinateur
+        #self.cam = cv2.VideoCapture(0)
+        self.cam = cv2.VideoCapture(1) #sur ordinateur portable pour ne pas utiliser la webcam de l'ordinateur
         self.ui.setupUi(self)
         self.ui.quitter.clicked.connect(self.quitter)
         self.ui.pause.clicked.connect(self.mettre_pause)
@@ -637,7 +637,7 @@ class MonAppli_jeu(QtGui.QMainWindow):
                               
                 self.echogra.x = dist_sonde
                 self.echogra.y = 0
-                self.echogra.x = self.echogra.correction_xsonde()
+                #self.echogra.x = self.echogra.correction_xsonde()
                 if self.echogra.x != None:
                     
                     self.echogra.x = (self.echogra.x - dist_origine) * dilatation_espace
@@ -648,9 +648,11 @@ class MonAppli_jeu(QtGui.QMainWindow):
                 
                 self.echogra.angle_z = donnees[5]+offset_angle_sonde
                 
+                
                 self.aigu.x = dist_aiguille
                 if dist_aiguille != None:
-                    self.aigu.x = (dist_aiguille - dist_origine) * dilatation_espace
+                    #self.aigu.x = sqrt(abs(dist_aiguille**2 - ya**2))
+                    self.aigu.x = (self.aigu.x - dist_origine) * dilatation_espace
 
                 self.aigu.y = ya
                 
